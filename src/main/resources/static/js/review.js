@@ -1,77 +1,118 @@
-(function () {
+document.addEventListener('DOMContentLoaded', () => {
   const textarea = document.getElementById("code");
-  const messages = document.getElementById("messages");
-  const submitBtn = document.getElementById("submit-btn");
   const form = document.getElementById("review-form");
+  const submitBtn = document.getElementById("submit-btn");
+  const langSelect = document.getElementById("language");
+  const loadingIndicator = document.getElementById("loading-indicator");
+  const chatWindow = document.getElementById("chat-window");
+  const messagesList = document.getElementById("messages");
 
-  function scrollToBottom(behavior = 'smooth') {
-    if (!messages) return;
-    const container = messages.closest('.chat-window');
-    if (container) {
-      try {
-        container.scrollTo({ top: container.scrollHeight, behavior });
-      } catch (e) {
-        container.scrollTop = container.scrollHeight;
-      }
+  // Keep chat scrolled to bottom
+  function scrollToBottom() {
+    if (chatWindow) {
+      chatWindow.scrollTop = chatWindow.scrollHeight;
     }
   }
+  setTimeout(scrollToBottom, 50);
 
-  // On load, focus the textarea and scroll to bottom
-  document.addEventListener('DOMContentLoaded', () => {
-    if (textarea) textarea.focus();
-    // small timeout to allow server-rendered messages to layout
-    setTimeout(() => scrollToBottom('auto'), 50);
-  });
+  // Initialize CodeMirror 6 (which is actually exposed globally as CodeMirror in the legacy v5 cdn link used, 
+  // but we included the v5 scripts per standard non-module setups to avoid build tools).
+  // Setup CodeMirror instance
+  let editor = null;
+  if (textarea && typeof CodeMirror !== 'undefined') {
+    editor = CodeMirror(document.getElementById("editor-container"), {
+      value: textarea.value || "",
+      mode: getCodeMirrorMode(langSelect ? langSelect.value : 'Java'),
+      theme: "material-ocean",
+      lineNumbers: true,
+      matchBrackets: true,
+      autoCloseBrackets: true,
+      indentUnit: 4,
+      tabSize: 4,
+      indentWithTabs: false,
+      lineWrapping: true,
+      extraKeys: {
+        "Ctrl-Enter": function() {
+          if (form) form.requestSubmit();
+        },
+        "Cmd-Enter": function() {
+          if (form) form.requestSubmit();
+        }
+      }
+    });
 
-  // Observe new messages and scroll when they appear
-  if (messages && typeof MutationObserver !== 'undefined') {
-    const observer = new MutationObserver(() => scrollToBottom());
-    observer.observe(messages, { childList: true, subtree: true });
+    // Sync CodeMirror changes to hidden textarea
+    editor.on("change", () => {
+      textarea.value = editor.getValue();
+      updateSubmitState();
+    });
+    
+    // Focus automatically
+    setTimeout(() => editor.focus(), 100);
   }
 
-  if (!textarea) return;
-
-  textarea.addEventListener("keydown", (event) => {
-    if (event.key === "Tab") {
-      event.preventDefault();
-
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const before = textarea.value.substring(0, start);
-      const after = textarea.value.substring(end);
-
-      textarea.value = before + "  " + after;
-      textarea.selectionStart = textarea.selectionEnd = start + 2;
-      return;
-    }
-
-    const isCtrlEnter = (event.ctrlKey || event.metaKey) && event.key === "Enter";
-    if (isCtrlEnter) {
-      const formEl = textarea.closest("form");
-      if (formEl) {
-        event.preventDefault();
-        formEl.requestSubmit();
-      }
-    }
-  });
+  // Handle language change for syntax highlighting
+  if (langSelect && editor) {
+    langSelect.addEventListener("change", (e) => {
+      editor.setOption("mode", getCodeMirrorMode(e.target.value));
+    });
+  }
 
   // Enable/disable submit button based on content
   function updateSubmitState() {
-    if (!submitBtn) return;
-    submitBtn.disabled = textarea.value.trim() === '';
+    if (!submitBtn || !textarea) return;
+    const isEmpty = textarea.value.trim() === '';
+    submitBtn.disabled = isEmpty;
+    if (isEmpty) {
+        submitBtn.style.opacity = '0.5';
+        submitBtn.style.cursor = 'not-allowed';
+    } else {
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+    }
   }
 
-  textarea.addEventListener('input', updateSubmitState);
-  updateSubmitState();
+  if (textarea) updateSubmitState();
 
-  // Prevent double submits and show a submitting state
+  // Form Submission & Loading State
   if (form) {
     form.addEventListener('submit', (e) => {
+      // Ensure sync one last time
+      if (editor) textarea.value = editor.getValue();
+
+      if (textarea.value.trim() === '') {
+        e.preventDefault();
+        return;
+      }
+
+      // Show loading state
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Reviewing...';
+        submitBtn.innerHTML = `
+            <span>Analyzing...</span>
+            <svg class="spinner" viewBox="0 0 50 50" style="width:16px; height:16px; border:none; animation: spin 1s linear infinite;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="31.4 31.4" stroke-linecap="round"></circle></svg>
+        `;
       }
-      // allow normal submit to proceed
+      
+      // Hide empty state if exists
+      const emptyState = document.querySelector('.empty-state');
+      if (emptyState) emptyState.style.display = 'none';
+
+      // Show loading indicator in chat
+      if (loadingIndicator) {
+          loadingIndicator.style.display = 'flex';
+          scrollToBottom();
+      }
     });
   }
-})();
+
+  // map java/spring languages to codemirror modes
+  function getCodeMirrorMode(lang) {
+    const l = (lang || "").toLowerCase();
+    if (l.includes("java")) return "text/x-java";
+    if (l.includes("python")) return "python";
+    if (l.includes("javascript") || l.includes("ts") || l.includes("node")) return "javascript";
+    if (l.includes("xml") || l.includes("html")) return "xml";
+    return "text/x-java"; // default
+  }
+});

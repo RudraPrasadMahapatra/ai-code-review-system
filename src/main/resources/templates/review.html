@@ -4,94 +4,148 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI Code Review</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- CodeMirror 6 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/material-ocean.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/xml/xml.min.js"></script>
+    
+    <!-- Markdown Parsers -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+
+    <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/review.css}" />
   </head>
   <body>
     <div class="app">
       <aside class="app-sidebar">
-        <h1 class="brand">AI Code Review</h1>
-        <p class="brand-sub">Paste code, pick a language, and get feedback.</p>
+        <div class="brand-container">
+            <div class="logo-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+            </div>
+            <div>
+                <h1 class="brand">AI Reviewer</h1>
+                <p class="brand-sub">Powered by Rudra</p>
+            </div>
+        </div>
+        
+        <div class="sidebar-nav">
+             <div class="nav-item active">
+                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                 Code Review
+             </div>
+        </div>
       </aside>
 
       <main class="app-main">
         <header class="chat-header">
-          <div class="model-name">AI Code Review</div>
+             <div class="header-title">New Review Session</div>
+             <div class="header-status">
+                 <span class="status-dot"></span> Ready
+             </div>
         </header>
 
-        <section class="chat-window">
-          <ul id="messages" class="messages">
-            <!-- If the user submitted code show a user bubble -->
-            <li
-              th:if="${form != null and form.code != null and form.code != ''}"
-              class="message message-user"
-            >
-              <div class="bubble">
-                <div class="meta">You <span th:text="${form.language}"></span></div>
-                <pre class="code-block" th:text="${form.code}"></pre>
-              </div>
-            </li>
+        <section class="split-layout">
+            <!-- Left Side: Editor Form -->
+            <div class="editor-pane">
+                <form th:action="@{/review}" th:object="${form}" method="post" class="composer" id="review-form">
+                    <div class="composer-top">
+                        <label for="language" class="lang-label">Language</label>
+                        <select id="language" th:field="*{language}" class="select">
+                        <option th:each="lang : ${languages}" th:value="${lang}" th:text="${lang}"></option>
+                        </select>
+                        <div class="error" th:if="${#fields.hasErrors('language')}" th:errors="*{language}"></div>
+                    </div>
 
-            <!-- If there's an error show assistant error bubble -->
-            <li th:if="${reviewError}" class="message message-assistant">
-              <div class="bubble">
-                <div class="meta">Assistant</div>
-                <div class="assistant-error" th:text="${reviewError}"></div>
-              </div>
-            </li>
+                    <!-- Hidden textarea mapped to Spring Model -->
+                    <textarea id="code" th:field="*{code}" style="display:none;"></textarea>
+                    
+                    <!-- CodeMirror mounts here -->
+                    <div id="editor-container" class="editor-container"></div>
+                    
+                    <div class="composer-actions">
+                        <button type="submit" class="button button-primary" id="submit-btn">
+                            <span>Analyze Code</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-            <!-- If there's a response show assistant bubble -->
-            <li th:if="${reviewResponse}" class="message message-assistant">
-              <div class="bubble">
-                <div class="meta">Assistant</div>
-                <div class="assistant-summary" th:text="${reviewResponse.summary}"></div>
-
-                <div th:if="${reviewResponse.findings != null and !reviewResponse.findings.isEmpty()}">
-                  <ul class="findings">
-                    <li
-                      th:each="f : ${reviewResponse.findings}"
-                      th:class="'finding severity-' + ${#strings.toLowerCase(f.severity.toString())}"
-                    >
-                      <div class="finding-head">
-                        <span class="sev" th:text="${f.severity}"></span>
-                        <span class="rule" th:if="${f.ruleId}" th:text="${f.ruleId}"></span>
-                        <span class="lines" th:if="${f.lineStart != null}" th:text="${f.lineEnd != null ? 'Lines ' + f.lineStart + '-' + f.lineEnd : 'Line ' + f.lineStart}"></span>
-                      </div>
-                      <div class="msg" th:text="${f.message}"></div>
-                      <div class="sug" th:if="${f.suggestion}" th:text="${f.suggestion}"></div>
+            <!-- Right Side: AI Response Chat -->
+            <div class="chat-window" id="chat-window">
+                <ul id="messages" class="messages">
+                    <li th:if="${form == null or form.code == null or form.code == ''}" class="empty-state">
+                        <div class="empty-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/></svg>
+                        </div>
+                        <h3>Waiting for Code</h3>
+                        <p>Paste your snippet on the left and hit Analyze.</p>
                     </li>
-                  </ul>
+
+                    <!-- If there's an error show assistant error bubble -->
+                    <li th:if="${reviewError}" class="message message-assistant show">
+                        <div class="avatar">AI</div>
+                        <div class="bubble error-bubble">
+                            <div class="assistant-error" th:text="${reviewError}"></div>
+                        </div>
+                    </li>
+
+                    <!-- If there's a response show assistant bubble -->
+                    <li th:if="${reviewResponse}" class="message message-assistant show">
+                        <div class="avatar">AI</div>
+                        <div class="bubble">
+                            <div class="assistant-summary markdown-body" id="raw-summary" th:text="${reviewResponse.summary}" style="display:none;"></div>
+                            <div class="assistant-summary markdown-body" id="rendered-summary"></div>
+
+                            <div th:if="${reviewResponse.findings != null and !reviewResponse.findings.isEmpty()}">
+                                <ul class="findings">
+                                    <li th:each="f : ${reviewResponse.findings}" th:class="'finding severity-' + ${#strings.toLowerCase(f.severity.toString())}">
+                                    <div class="finding-head">
+                                        <span class="sev" th:text="${f.severity}"></span>
+                                        <span class="rule" th:if="${f.ruleId}" th:text="${f.ruleId}"></span>
+                                        <span class="lines" th:if="${f.lineStart != null}" th:text="${f.lineEnd != null ? 'Lines ' + f.lineStart + '-' + f.lineEnd : 'Line ' + f.lineStart}"></span>
+                                    </div>
+                                    <div class="msg" th:text="${f.message}"></div>
+                                    <div class="sug" th:if="${f.suggestion}" th:text="${f.suggestion}"></div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+                
+                <!-- Loading State (hidden by default) -->
+                <div id="loading-indicator" class="loading-state" style="display:none;">
+                     <div class="spinner"></div>
+                     <p>Analyzing code with AI...</p>
                 </div>
-              </div>
-            </li>
-          </ul>
+            </div>
         </section>
-
-        <form th:action="@{/review}" th:object="${form}" method="post" class="composer" id="review-form">
-          <div class="composer-top">
-            <select id="language" th:field="*{language}" class="select">
-              <option th:each="lang : ${languages}" th:value="${lang}" th:text="${lang}"></option>
-            </select>
-            <div class="error" th:if="${#fields.hasErrors('language')}" th:errors="*{language}"></div>
-          </div>
-
-          <textarea
-            id="code"
-            th:field="*{code}"
-            class="composer-input"
-            rows="6"
-            spellcheck="false"
-            autocomplete="off"
-            autocapitalize="off"
-            placeholder="Paste your code here... (Shift+Enter for newline, Ctrl/⌘+Enter to submit)"
-          ></textarea>
-          <div class="composer-actions">
-            <button type="submit" class="button" id="submit-btn">Review</button>
-            <span class="hint">Tip: press Ctrl/⌘ + Enter to submit</span>
-          </div>
-        </form>
       </main>
     </div>
 
-    <script th:src="@{/js/review.js}" defer></script>
+    <!-- Scripts -->
+    <script th:src="@{/js/review.js}"></script>
+    <script>
+      // Render markdown safely if response exists
+      document.addEventListener("DOMContentLoaded", () => {
+          const rawSummary = document.getElementById("raw-summary");
+          const renderedSummary = document.getElementById("rendered-summary");
+          if (rawSummary && renderedSummary) {
+              const html = DOMPurify.sanitize(marked.parse(rawSummary.textContent || ""));
+              renderedSummary.innerHTML = html;
+          }
+      });
+    </script>
   </body>
 </html>
