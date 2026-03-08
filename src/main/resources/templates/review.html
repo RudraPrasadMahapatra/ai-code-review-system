@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Code Review</title>
+    <link rel="stylesheet" th:href="@{/css/review.css}" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="app-sidebar">
+        <h1 class="brand">AI Code Review</h1>
+        <p class="brand-sub">Paste code, pick a language, and get feedback.</p>
+      </aside>
+
+      <main class="app-main">
+        <header class="chat-header">
+          <div class="model-name">AI Code Review</div>
+        </header>
+
+        <section class="chat-window">
+          <ul id="messages" class="messages">
+            <!-- If the user submitted code show a user bubble -->
+            <li
+              th:if="${form != null and form.code != null and form.code != ''}"
+              class="message message-user"
+            >
+              <div class="bubble">
+                <div class="meta">You <span th:text="${form.language}"></span></div>
+                <pre class="code-block" th:text="${form.code}"></pre>
+              </div>
+            </li>
+
+            <!-- If there's an error show assistant error bubble -->
+            <li th:if="${reviewError}" class="message message-assistant">
+              <div class="bubble">
+                <div class="meta">Assistant</div>
+                <div class="assistant-error" th:text="${reviewError}"></div>
+              </div>
+            </li>
+
+            <!-- If there's a response show assistant bubble -->
+            <li th:if="${reviewResponse}" class="message message-assistant">
+              <div class="bubble">
+                <div class="meta">Assistant</div>
+                <div class="assistant-summary" th:text="${reviewResponse.summary}"></div>
+
+                <div th:if="${reviewResponse.findings != null and !reviewResponse.findings.isEmpty()}">
+                  <ul class="findings">
+                    <li
+                      th:each="f : ${reviewResponse.findings}"
+                      th:class="'finding severity-' + ${#strings.toLowerCase(f.severity.toString())}"
+                    >
+                      <div class="finding-head">
+                        <span class="sev" th:text="${f.severity}"></span>
+                        <span class="rule" th:if="${f.ruleId}" th:text="${f.ruleId}"></span>
+                        <span class="lines" th:if="${f.lineStart != null}" th:text="${f.lineEnd != null ? 'Lines ' + f.lineStart + '-' + f.lineEnd : 'Line ' + f.lineStart}"></span>
+                      </div>
+                      <div class="msg" th:text="${f.message}"></div>
+                      <div class="sug" th:if="${f.suggestion}" th:text="${f.suggestion}"></div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <form th:action="@{/review}" th:object="${form}" method="post" class="composer" id="review-form">
+          <div class="composer-top">
+            <select id="language" th:field="*{language}" class="select">
+              <option th:each="lang : ${languages}" th:value="${lang}" th:text="${lang}"></option>
+            </select>
+            <div class="error" th:if="${#fields.hasErrors('language')}" th:errors="*{language}"></div>
+          </div>
+
+          <textarea
+            id="code"
+            th:field="*{code}"
+            class="composer-input"
+            rows="6"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            placeholder="Paste your code here... (Shift+Enter for newline, Ctrl/⌘+Enter to submit)"
+          ></textarea>
+          <div class="composer-actions">
+            <button type="submit" class="button" id="submit-btn">Review</button>
+            <span class="hint">Tip: press Ctrl/⌘ + Enter to submit</span>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script th:src="@{/js/review.js}" defer></script>
+  </body>
+</html>
