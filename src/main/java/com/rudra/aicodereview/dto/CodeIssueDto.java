@@ -1,0 +1,14 @@
+package com.rudra.aicodereview.dto;
+
+import com.rudra.aicodereview.entity.Severity;
+
+public record CodeIssueDto(
+    Long id,
+    Severity severity,
+    String ruleId,
+    String message,
+    Integer lineStart,
+    Integer lineEnd,
+    String suggestion
+) {}
+

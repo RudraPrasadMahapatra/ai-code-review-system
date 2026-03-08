@@ -48,4 +48,4 @@ export SPRING_PROFILES_ACTIVE=mysql,openai
 - `GET /api/reviews/{id}` – fetch a review + findings
 - UI: `GET /review` – submit code and see feedback
 
-The AI engine is currently a stub (`StubAiReviewEngine`) to demonstrate the layering.
+The AI engine is currently a stub (`LocalReviewEngine`) to demonstrate the layering.
