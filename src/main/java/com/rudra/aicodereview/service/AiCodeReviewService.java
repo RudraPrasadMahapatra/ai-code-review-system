@@ -45,6 +45,7 @@ public class AiCodeReviewService {
                 finding -> {
                     AiReviewFinding mappedFinding = new AiReviewFinding(
                         finding.severity(),
+                        finding.category(),
                         finding.ruleId(),
                         finding.message(),
                         finding.lineStart(),
@@ -53,6 +54,7 @@ public class AiCodeReviewService {
         
         CodeIssue issue = new CodeIssue();
         issue.setSeverity(finding.severity());
+        issue.setCategory(finding.category());
         issue.setRuleId(finding.ruleId());
         issue.setMessage(finding.message());
         issue.setLineStart(finding.lineStart());

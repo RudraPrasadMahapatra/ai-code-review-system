@@ -268,18 +268,18 @@
                                 <ul class="findings" id="findings-list">
                                     <li th:each="f : ${reviewResponse.findings()}" 
                                         class="finding"
-                                        th:classappend="'severity-' + ${#strings.toLowerCase(f.severity().toString())}"
-                                        th:attr="data-category=${f.category()}, data-line-start=${f.lineStart()}, data-severity=${#strings.toLowerCase(f.severity().toString())}">
+                                        th:classappend="'severity-' + ${f.severity != null ? #strings.toLowerCase(f.severity) : 'info'}"
+                                        th:attr="data-category=${f.category != null ? f.category : 'OTHER'}, data-line-start=${f.lineStart != null ? f.lineStart : ''}, data-severity=${f.severity != null ? #strings.toLowerCase(f.severity) : 'info'}">
                                         <div class="finding-head">
                                             <span class="severity-badge"
-                                                  th:classappend="'sev-' + ${#strings.toLowerCase(f.severity().toString())}"
-                                                  th:text="${f.severity()}"></span>
-                                            <span class="category-badge" th:text="${f.category()}" style="font-size:10px; opacity:0.7; margin-right:6px;"></span>
-                                            <span class="rule" th:if="${f.ruleId()}" th:text="${f.ruleId()}"></span>
-                                            <span class="lines" th:if="${f.lineStart() != null}" th:text="${f.lineEnd() != null ? 'L' + f.lineStart() + '-' + f.lineEnd() : 'L' + f.lineStart()}"></span>
+                                                  th:classappend="'sev-' + ${f.severity != null ? #strings.toLowerCase(f.severity) : 'info'}"
+                                                  th:text="${f.severity != null ? f.severity : 'INFO'}"></span>
+                                            <span class="category-badge" th:text="${f.category != null ? f.category : 'OTHER'}" style="font-size:10px; opacity:0.7; margin-right:6px;"></span>
+                                            <span class="rule" th:if="${f.ruleId != null}" th:text="${f.ruleId}"></span>
+                                            <span class="lines" th:if="${f.lineStart != null}" th:text="${f.lineEnd != null ? 'L' + f.lineStart + '-' + f.lineEnd : 'L' + f.lineStart}"></span>
                                         </div>
-                                        <div class="msg" th:text="${f.message()}"></div>
-                                        <div class="sug" th:if="${f.suggestion()}" th:text="${f.suggestion()}"></div>
+                                        <div class="msg" th:text="${f.message}"></div>
+                                        <div class="sug" th:if="${f.suggestion != null}" th:text="${f.suggestion}"></div>
                                     </li>
                                 </ul>
                             </div>
