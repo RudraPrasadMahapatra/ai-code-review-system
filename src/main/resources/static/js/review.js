@@ -7,6 +7,130 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatWindow = document.getElementById("chat-window");
   const fileInput = document.getElementById("file-upload");
   const fileNameDisplay = document.getElementById("file-name");
+  const themeToggle = document.getElementById("theme-toggle");
+  const lintBadge = document.getElementById("lint-badge");
+  const resizer = document.getElementById("resizer");
+  const editorPane = document.querySelector(".editor-pane");
+
+  // Resizable panes logic
+  if (resizer && chatWindow && editorPane) {
+    let isResizing = false;
+
+    resizer.addEventListener("mousedown", (e) => {
+      isResizing = true;
+      document.body.style.cursor = 'col-resize';
+      // Prevent text selection while dragging
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isResizing) return;
+      
+      // Calculate new width of the chat window based on mouse position
+      // Mouse X from the right edge gives the new chat window width
+      const newWidth = document.body.clientWidth - e.clientX;
+      
+      // Constraints: min 300px, max 800px or up to a limit so editor is visible
+      if (newWidth >= 300 && newWidth <= 800 && newWidth < document.body.clientWidth - 300) {
+        chatWindow.style.width = `${newWidth}px`;
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        // Signal CodeMirror to resize since container size changed
+        if (typeof editor !== 'undefined' && editor) {
+          editor.refresh();
+        }
+      }
+    });
+  }
+
+  // Load theme from localStorage
+  const currentTheme = localStorage.getItem("theme") || "dark";
+  if (currentTheme === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+
+  // Theme Toggler
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      let theme = document.documentElement.getAttribute("data-theme");
+      if (theme === "light") {
+        document.documentElement.removeAttribute("data-theme");
+        localStorage.setItem("theme", "dark");
+        if (editor) editor.setOption("theme", "material-ocean");
+      } else {
+        document.documentElement.setAttribute("data-theme", "light");
+        localStorage.setItem("theme", "light");
+        if (editor) editor.setOption("theme", "eclipse");
+      }
+    });
+  }
+
+  // Generic syntax linter (bracket matching) for all languages
+  if (typeof CodeMirror !== 'undefined') {
+    CodeMirror.registerHelper("lint", "generic", function(text) {
+      const found = [];
+      const stack = [];
+      const pairs = { '{': '}', '[': ']', '(': ')' };
+      const revPairs = { '}': '{', ']': '[', ')': '(' };
+      const lines = text.split('\n');
+
+      let inString = false;
+      let stringChar = '';
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        for (let j = 0; j < line.length; j++) {
+          const ch = line[j];
+          
+          // Basic string ignoring
+          if (!inString && (ch === '"' || ch === "'" || ch === '`')) {
+            inString = true;
+            stringChar = ch;
+            continue;
+          } else if (inString && ch === stringChar && line[j-1] !== '\\') {
+            inString = false;
+            continue;
+          }
+
+          if (inString) continue;
+
+          if (pairs[ch]) {
+            stack.push({ch: ch, line: i, chPos: j});
+          } else if (revPairs[ch]) {
+            if (stack.length === 0 || stack[stack.length - 1].ch !== revPairs[ch]) {
+              found.push({
+                message: "Unmatched or unexpected '" + ch + "'",
+                severity: "error",
+                from: CodeMirror.Pos(i, j),
+                to: CodeMirror.Pos(i, j + 1)
+              });
+              // To prevent cascading errors, clear stack if mismatched closing brace
+              if (stack.length > 0) stack.pop(); 
+            } else {
+              stack.pop();
+            }
+          }
+        }
+      }
+
+      while (stack.length > 0) {
+        const item = stack.pop();
+        found.push({
+          message: "Unclosed '" + item.ch + "'",
+          severity: "error",
+          from: CodeMirror.Pos(item.line, item.chPos),
+          to: CodeMirror.Pos(item.line, item.chPos + 1)
+        });
+      }
+      return found;
+    });
+  }
 
   // File upload display
   if (fileInput && fileNameDisplay) {
@@ -34,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
     editor = CodeMirror(document.getElementById("editor-container"), {
       value: textarea.value || "",
       mode: getCodeMirrorMode(langSelect ? langSelect.value : 'java'),
-      theme: "material-ocean",
+      theme: document.documentElement.getAttribute("data-theme") === "light" ? "eclipse" : "material-ocean",
       lineNumbers: true,
       matchBrackets: true,
       autoCloseBrackets: true,
@@ -42,6 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
       tabSize: 4,
       indentWithTabs: false,
       lineWrapping: true,
+      gutters: ["CodeMirror-lint-markers", "CodeMirror-linenumbers"],
+      lint: {
+        getAnnotations: CodeMirror.lint.generic,
+        async: false
+      },
       extraKeys: {
         "Ctrl-Enter": function() {
           if (form) form.requestSubmit();
@@ -58,8 +187,33 @@ document.addEventListener('DOMContentLoaded', () => {
       updateSubmitState();
     });
 
+    // Update lint badge based on syntax errors
+    function updateLintBadge(errors) {
+      if (!lintBadge) return;
+      if (errors.length > 0) {
+        lintBadge.className = "lint-status has-errors";
+        lintBadge.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${errors.length} error(s)`;
+      } else {
+        lintBadge.className = "lint-status no-errors";
+        lintBadge.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> No syntax errors`;
+      }
+    }
+
+    // Capture lint updates
+    editor.on("update", () => {
+       setTimeout(() => {
+          const state = editor.state.lint;
+          if (state && state.marked) {
+              updateLintBadge(state.marked);
+          }
+       }, 500);
+    });
+
     // Auto-focus
-    setTimeout(() => editor.focus(), 100);
+    setTimeout(() => {
+        editor.focus();
+        editor.performLint(); // trigger linting on load
+    }, 100);
   }
 
   // Language change → update syntax highlighting

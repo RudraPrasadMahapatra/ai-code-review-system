@@ -22,6 +22,26 @@
     --radius-sm: 6px;
 }
 
+[data-theme="light"] {
+    --bg-color: #ffffff;
+    --panel-bg: #f8f9fa;
+    --panel-border: #e2e4e9;
+    --panel-border-hover: #c5c9d2;
+    --text-primary: #18181b;
+    --text-secondary: #64748b;
+
+    --accent: #2563eb;
+    --accent-glow: rgba(37, 99, 235, 0.12);
+
+    --severity-info: #2563eb;
+    --severity-warn: #d97706;
+    --severity-err: #dc2626;
+    --success: #059669;
+    --success-bg: rgba(5, 150, 105, 0.06);
+    --warn-bg: rgba(217, 119, 6, 0.06);
+    --err-bg: rgba(220, 38, 38, 0.06);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
@@ -199,17 +219,14 @@ html, body {
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
-.status-completed {
-    background: var(--success-bg);
-    color: var(--success);
-}
-.status-failed {
-    background: var(--err-bg);
-    color: var(--severity-err);
-}
-.status-pending {
-    background: var(--warn-bg);
-    color: var(--severity-warn);
+.status-completed { background: var(--success-bg); color: var(--success); }
+.status-failed { background: var(--err-bg); color: var(--severity-err); }
+.status-pending { background: var(--warn-bg); color: var(--severity-warn); }
+
+[data-theme="light"] .status-completed,
+[data-theme="light"] .status-failed,
+[data-theme="light"] .status-pending {
+    font-weight: 600;
 }
 
 /* ── Score ── */
