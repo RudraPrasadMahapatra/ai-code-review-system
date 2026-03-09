@@ -1,4 +1,6 @@
-# 🚀 AI-Powered Code Review System
+#  AI-Powered Code Review System
+
+> ⚡ **Built with Vibe Coding:** This entire enterprise-grade application was rapidly developed, debugged, and architected purely through autonomous AI-driven prompt engineering, showcasing the blistering speed of AI Pair Programming!
 
 A professional, full-stack AI Code Review tool designed to feel like enterprise developer software (similar to GitHub Copilot or SonarQube). It analyzes your source code across multiple languages, detects bugs and security flaws using a **hybrid analysis approach**, and provides intelligent, actionable suggestions.
 
