@@ -28,6 +28,10 @@ public class CodeIssue {
   @Column(nullable = false, length = 10)
   private Severity severity;
 
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20)
+  private IssueCategory category;
+
   @Column(length = 100)
   private String ruleId;
 
@@ -62,6 +66,14 @@ public class CodeIssue {
 
   public void setSeverity(Severity severity) {
     this.severity = severity;
+  }
+
+  public IssueCategory getCategory() {
+    return category;
+  }
+
+  public void setCategory(IssueCategory category) {
+    this.category = category;
   }
 
   public String getRuleId() {

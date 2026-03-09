@@ -3,8 +3,10 @@ package com.rudra.aicodereview.service;
 import com.rudra.aicodereview.entity.Severity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import com.rudra.aicodereview.entity.IssueCategory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -31,6 +33,7 @@ public class OpenAiCodeReviewEngine implements CodeReviewEngine {
         "findings": [
           {
             "severity": "ERROR" | "WARNING" | "INFO",
+            "category": "BUG" | "SECURITY" | "PERFORMANCE" | "STYLE" | "DOCS" | "OTHER",
             "ruleId": "<short identifier, e.g. NULL_CHECK>",
             "message": "<concise description of the issue>",
             "lineStart": <integer or null>,
@@ -119,6 +122,7 @@ public class OpenAiCodeReviewEngine implements CodeReviewEngine {
           List.of(
               new Finding(
                   Severity.WARNING,
+                  IssueCategory.OTHER,
                   "AI_PARSE",
                   "AI response was not valid JSON in the expected schema.",
                   null,
@@ -143,6 +147,7 @@ public class OpenAiCodeReviewEngine implements CodeReviewEngine {
             f ->
                 new Finding(
                     parseSeverity(f.severity()),
+                    parseCategory(f.category()),
                     blankToNull(f.ruleId()),
                     f.message().trim(),
                     f.lineStart(),
@@ -159,6 +164,20 @@ public class OpenAiCodeReviewEngine implements CodeReviewEngine {
       case "ERROR" -> Severity.ERROR;
       case "WARNING", "WARN" -> Severity.WARNING;
       default -> Severity.INFO;
+    };
+  }
+
+  private static IssueCategory parseCategory(String cat) {
+    if (cat == null) {
+      return IssueCategory.OTHER;
+    }
+    return switch (cat.trim().toUpperCase()) {
+      case "BUG" -> IssueCategory.BUG;
+      case "SECURITY" -> IssueCategory.SECURITY;
+      case "PERFORMANCE" -> IssueCategory.PERFORMANCE;
+      case "STYLE" -> IssueCategory.STYLE;
+      case "DOCS", "DOCUMENTATION" -> IssueCategory.DOCS;
+      default -> IssueCategory.OTHER;
     };
   }
 
@@ -240,6 +259,7 @@ public class OpenAiCodeReviewEngine implements CodeReviewEngine {
   @JsonIgnoreProperties(ignoreUnknown = true)
   private record GptFinding(
       String severity,
+      String category,
       String ruleId,
       String message,
       Integer lineStart,

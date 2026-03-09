@@ -1,6 +1,7 @@
 package com.rudra.aicodereview.service;
 
 import com.rudra.aicodereview.entity.Severity;
+import com.rudra.aicodereview.entity.IssueCategory;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,6 +24,7 @@ public class LocalReviewEngine implements CodeReviewEngine {
       findings.add(
           new Finding(
               Severity.INFO,
+              IssueCategory.OTHER,
               "STUB_TODO",
               "Found TODO marker; consider addressing before merge.",
               null,
@@ -34,6 +36,7 @@ public class LocalReviewEngine implements CodeReviewEngine {
       findings.add(
           new Finding(
               Severity.WARNING,
+              IssueCategory.STYLE,
               "STUB_STDOUT",
               "Avoid using System.out.println in production code.",
               null,
@@ -45,6 +48,7 @@ public class LocalReviewEngine implements CodeReviewEngine {
       findings.add(
           new Finding(
               Severity.ERROR,
+              IssueCategory.SECURITY,
               "STUB_SECRET",
               "Potential hardcoded secret detected.",
               null,

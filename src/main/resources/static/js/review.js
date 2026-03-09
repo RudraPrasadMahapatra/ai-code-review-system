@@ -282,4 +282,100 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     return modes[l] || 'text/x-java';
   }
+
+  // --- Category Filtering ---
+  const categoryTabs = document.getElementById("category-tabs");
+  const findingsList = document.getElementById("findings-list");
+  if (categoryTabs && findingsList) {
+    const tabs = categoryTabs.querySelectorAll(".category-tab");
+    const findings = findingsList.querySelectorAll(".finding");
+
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        // Update active class
+        tabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+
+        const selectedCategory = tab.getAttribute("data-category");
+
+        // Filter findings
+        findings.forEach(finding => {
+          if (selectedCategory === "ALL" || finding.getAttribute("data-category") === selectedCategory) {
+            finding.style.display = "flex";
+          } else {
+            finding.style.display = "none";
+          }
+        });
+      });
+    });
+  }
+
+  // --- Export Markdown ---
+  const exportBtn = document.getElementById("export-btn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", () => {
+      let markdown = "# AI Code Review Report\n\n";
+      
+      const lang = langSelect ? langSelect.value : 'java';
+      const file = document.getElementById("file-name")?.textContent || "Code Snippet";
+      markdown += `**Language:** ${lang}\n`;
+      markdown += `**File:** ${file}\n\n`;
+
+      const gauge = document.querySelector(".score-value span");
+      if (gauge) {
+        markdown += `## Quality Score: ${gauge.textContent}/10\n\n`;
+      }
+
+      const metrics = document.querySelectorAll(".metric-pill");
+      if (metrics.length > 0) {
+        markdown += `## Complexity\n`;
+        metrics.forEach(pill => {
+          markdown += `- **${pill.textContent.trim()}**\n`;
+        });
+        markdown += `\n`;
+      }
+
+      const summary = document.getElementById("raw-summary");
+      if (summary) {
+        markdown += `## Summary\n${summary.textContent.trim()}\n\n`;
+      }
+
+      if (findingsList) {
+        const findings = findingsList.querySelectorAll(".finding");
+        if (findings.length > 0) {
+          markdown += `## Findings (${findings.length})\n\n`;
+          findings.forEach(finding => {
+            const sev = finding.querySelector(".severity-badge")?.textContent || "";
+            const cat = finding.querySelector(".category-badge")?.textContent || "";
+            const rule = finding.querySelector(".rule")?.textContent || "";
+            const lines = finding.querySelector(".lines")?.textContent || "";
+            const msg = finding.querySelector(".msg")?.textContent || "";
+            const sug = finding.querySelector(".sug")?.textContent || "";
+            
+            markdown += `### ${sev} | ${cat} | ${rule} ${lines}\n`;
+            markdown += `**Issue:** ${msg}\n\n`;
+            if (sug) {
+              markdown += `**Suggestion:** ${sug}\n\n`;
+            }
+          });
+        }
+      }
+
+      const optimized = document.getElementById("raw-optimized");
+      if (optimized) {
+        markdown += `## Optimized Code\n\`\`\`${lang}\n${optimized.textContent.trim()}\n\`\`\`\n`;
+      }
+
+      // Download
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `code_review_${new Date().getTime()}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
 });

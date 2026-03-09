@@ -148,8 +148,14 @@
                     <!-- AI Response -->
                     <div th:if="${reviewResponse}" class="message">
                         <div class="message-header">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                            AI Reviewer
+                            <div>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                                AI Reviewer
+                            </div>
+                            <button class="button-outline" id="export-btn" title="Export as Markdown" style="padding: 4px 8px; font-size: 11px;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Export
+                            </button>
                         </div>
                         <div class="message-body">
 
@@ -198,12 +204,28 @@
                                     <h4>Findings</h4>
                                     <span class="findings-count" th:text="${#lists.size(reviewResponse.findings())}"></span>
                                 </div>
-                                <ul class="findings">
-                                    <li th:each="f : ${reviewResponse.findings()}" th:class="'finding severity-' + ${#strings.toLowerCase(f.severity().toString())}">
+                                
+                                <!-- Category Toggles -->
+                                <div class="category-tabs" id="category-tabs">
+                                    <button class="category-tab active" data-category="ALL">All</button>
+                                    <button class="category-tab" data-category="BUG">Bug</button>
+                                    <button class="category-tab" data-category="SECURITY">Security</button>
+                                    <button class="category-tab" data-category="PERFORMANCE">Performance</button>
+                                    <button class="category-tab" data-category="STYLE">Style</button>
+                                    <button class="category-tab" data-category="DOCS">Docs</button>
+                                    <button class="category-tab" data-category="OTHER">Other</button>
+                                </div>
+
+                                <ul class="findings" id="findings-list">
+                                    <li th:each="f : ${reviewResponse.findings()}" 
+                                        class="finding"
+                                        th:classappend="'severity-' + ${#strings.toLowerCase(f.severity().toString())}"
+                                        th:attr="data-category=${f.category()}">
                                         <div class="finding-head">
                                             <span class="severity-badge"
                                                   th:classappend="'sev-' + ${#strings.toLowerCase(f.severity().toString())}"
                                                   th:text="${f.severity()}"></span>
+                                            <span class="category-badge" th:text="${f.category()}" style="font-size:10px; opacity:0.7; margin-right:6px;"></span>
                                             <span class="rule" th:if="${f.ruleId()}" th:text="${f.ruleId()}"></span>
                                             <span class="lines" th:if="${f.lineStart() != null}" th:text="${f.lineEnd() != null ? 'L' + f.lineStart() + '-' + f.lineEnd() : 'L' + f.lineStart()}"></span>
                                         </div>

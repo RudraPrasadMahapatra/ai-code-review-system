@@ -44,6 +44,7 @@ public class CodeReviewService {
       for (CodeReviewEngine.Finding finding : response.findings()) {
         CodeIssue entity = new CodeIssue();
         entity.setSeverity(finding.severity());
+        entity.setCategory(finding.category());
         entity.setRuleId(finding.ruleId());
         entity.setMessage(finding.message());
         entity.setLineStart(finding.lineStart());
@@ -77,6 +78,7 @@ public class CodeReviewService {
                     new CodeIssueDto(
                         finding.getId(),
                         finding.getSeverity(),
+                        finding.getCategory(),
                         finding.getRuleId(),
                         finding.getMessage(),
                         finding.getLineStart(),

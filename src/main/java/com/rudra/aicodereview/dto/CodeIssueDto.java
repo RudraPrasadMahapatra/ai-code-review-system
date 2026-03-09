@@ -1,10 +1,12 @@
 package com.rudra.aicodereview.dto;
 
+import com.rudra.aicodereview.entity.IssueCategory;
 import com.rudra.aicodereview.entity.Severity;
 
 public record CodeIssueDto(
     Long id,
     Severity severity,
+    IssueCategory category,
     String ruleId,
     String message,
     Integer lineStart,
