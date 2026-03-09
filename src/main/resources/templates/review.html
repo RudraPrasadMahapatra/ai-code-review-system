@@ -232,7 +232,7 @@
                             <style> [data-theme="light"] .scorecard { background: rgba(0,0,0,0.02) !important; border-color: #e2e4e9 !important; } </style>
 
                             <!-- Complexity Metrics -->
-                            <div class="metrics-row" th:if="${reviewResponse.timeComplexity() != null or reviewResponse.spaceComplexity() != null}">
+                            <div class="metrics-row" th:if="${reviewResponse.timeComplexity() != null or reviewResponse.spaceComplexity() != null or reviewResponse.tokensUsed() != null}">
                                 <div class="metric-pill" th:if="${reviewResponse.timeComplexity() != null}">
                                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                     Time: <span th:text="${reviewResponse.timeComplexity()}"></span>
@@ -240,6 +240,13 @@
                                 <div class="metric-pill" th:if="${reviewResponse.spaceComplexity() != null}">
                                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                                     Space: <span th:text="${reviewResponse.spaceComplexity()}"></span>
+                                </div>
+                                <div class="metric-pill" th:if="${reviewResponse.tokensUsed() != null}">
+                                    <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                    Tokens: <span th:text="${reviewResponse.tokensUsed()}"></span> 
+                                    <span style="opacity: 0.6; font-size: 10px; margin-left: 4px;" th:if="${reviewResponse.executionTimeMs() != null}">
+                                        (<span th:text="${reviewResponse.executionTimeMs()}"></span>ms)
+                                    </span>
                                 </div>
                             </div>
 

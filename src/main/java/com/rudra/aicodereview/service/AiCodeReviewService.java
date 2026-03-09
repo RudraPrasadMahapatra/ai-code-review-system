@@ -8,6 +8,10 @@ import com.rudra.aicodereview.entity.CodeIssue;
 import com.rudra.aicodereview.entity.CodeReviewRecord;
 import com.rudra.aicodereview.entity.CodeReviewStatus;
 import com.rudra.aicodereview.repository.CodeReviewRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,22 +20,71 @@ import org.springframework.transaction.annotation.Transactional;
 public class AiCodeReviewService {
   private final CodeReviewEngine aiReviewEngine;
   private final CodeReviewRepository repository;
+  private final StaticAnalyzer staticAnalyzer;
 
-  public AiCodeReviewService(CodeReviewEngine aiReviewEngine, CodeReviewRepository repository) {
+  public AiCodeReviewService(CodeReviewEngine aiReviewEngine, CodeReviewRepository repository, StaticAnalyzer staticAnalyzer) {
     this.aiReviewEngine = aiReviewEngine;
     this.repository = repository;
+    this.staticAnalyzer = staticAnalyzer;
+  }
+
+  private String computeHash(String input) {
+    try {
+      MessageDigest md = MessageDigest.getInstance("MD5");
+      byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
+      return HexFormat.of().formatHex(digest);
+    } catch (NoSuchAlgorithmException e) {
+      return String.valueOf(input.hashCode());
+    }
   }
 
   @Transactional
   public CodeReviewResponseDto review(CodeReviewRequestDto request) {
+    String fileCode = request.code();
+    String contentHash = computeHash(fileCode);
+
+    CodeReviewRecord cachedRecord = repository.findFirstByContentHash(contentHash);
+    if (cachedRecord != null && cachedRecord.getStatus() == CodeReviewStatus.COMPLETED) {
+      return toDto(cachedRecord);
+    }
+
     CodeReviewRecord record = new CodeReviewRecord();
     record.setLanguage(request.language());
-    record.setContent(request.code());
+    record.setContent(fileCode);
+    record.setContentHash(contentHash);
     record.setFilePath("UI_SUBMISSION");
     record.setStatus(CodeReviewStatus.PENDING);
 
+    // 1. Static Analysis
+    List<StaticAnalyzer.StaticIssue> staticIssues = staticAnalyzer.analyze(fileCode);
+
+    // 2. Context Window Reduction
+    String codeToAnalyze = fileCode;
+    if (codeToAnalyze.length() > 2000) {
+      if (!staticIssues.isEmpty()) {
+        int minStart = codeToAnalyze.length();
+        int maxEnd = 0;
+        for (StaticAnalyzer.StaticIssue issue : staticIssues) {
+          minStart = Math.min(minStart, issue.startIndex());
+          maxEnd = Math.max(maxEnd, issue.endIndex());
+        }
+        int start = Math.max(0, minStart - 500);
+        int end = Math.min(codeToAnalyze.length(), maxEnd + 500);
+        if (end - start > 2000) {
+          end = start + 2000;
+          if (end > codeToAnalyze.length()) {
+            end = codeToAnalyze.length();
+            start = Math.max(0, end - 2000);
+          }
+        }
+        codeToAnalyze = codeToAnalyze.substring(start, end);
+      } else {
+        codeToAnalyze = codeToAnalyze.substring(0, 2000);
+      }
+    }
+
     CodeReviewEngine.ReviewResponse engineResponse =
-        aiReviewEngine.review(request.language(), request.code(), null);
+        aiReviewEngine.review(request.language(), codeToAnalyze, null);
 
     record.setScore(engineResponse.score());
     record.setTimeComplexity(engineResponse.timeComplexity());
@@ -76,7 +129,26 @@ public class AiCodeReviewService {
         engineResponse.timeComplexity(),
         engineResponse.spaceComplexity(),
         engineResponse.optimizedCode(),
-        findings);
+        findings,
+        engineResponse.tokensUsed(),
+        engineResponse.executionTimeMs());
+  }
+
+  private CodeReviewResponseDto toDto(CodeReviewRecord record) {
+    List<AiReviewFinding> findings = record.getFindings().stream()
+      .map(f -> new AiReviewFinding(f.getSeverity(), f.getCategory(), f.getRuleId(), f.getMessage(), f.getLineStart(), f.getLineEnd(), f.getSuggestion()))
+      .toList();
+    
+    return new CodeReviewResponseDto(
+      summarize(findings),
+      record.getScore(),
+      record.getTimeComplexity(),
+      record.getSpaceComplexity(),
+      null, // optimized code can be skipped for now on cache unless we save it in db
+      findings,
+      record.getTokensUsed(),
+      record.getExecutionTimeMs()
+    );
   }
 
   private static String summarize(List<AiReviewFinding> findings) {

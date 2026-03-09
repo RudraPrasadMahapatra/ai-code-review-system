@@ -3,7 +3,6 @@ package com.rudra.aicodereview.service;
 import com.rudra.aicodereview.entity.Severity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import com.rudra.aicodereview.entity.IssueCategory;
@@ -46,7 +45,7 @@ public class OpenAiCodeReviewEngine implements CodeReviewEngine {
       Rules:
       - "score" is an integer from 1 (terrible) to 10 (excellent).
       - "optimizedCode" must contain the COMPLETE refactored version. No backticks or markdown.
-      - Return at most 5 findings, ordered by severity (ERROR first, then WARNING, then INFO).
+      - Return maximum 5 findings with concise explanations and short suggestions. Order by severity.
       - Do NOT wrap the JSON in markdown code fences or add any text outside the JSON object.
       """;
 
@@ -90,6 +89,11 @@ public class OpenAiCodeReviewEngine implements CodeReviewEngine {
 
     long executionTimeMs = System.currentTimeMillis() - start;
     log.info("AI review completed in {} ms", executionTimeMs);
+
+    if (chatResponse == null || chatResponse.getResult() == null || chatResponse.getResult().getOutput() == null) {
+      log.warn("AI returned a null or empty response");
+      return emptyResponse(null, executionTimeMs);
+    }
 
     String raw = chatResponse.getResult().getOutput().getText();
     Integer tokens = null;

@@ -64,8 +64,19 @@ public class CodeReviewWebController {
       map.put("timeComplexity", r.getTimeComplexity());
       map.put("spaceComplexity", r.getSpaceComplexity());
       map.put("status", r.getStatus() != null ? r.getStatus().name() : "UNKNOWN");
+      map.put("tokensUsed", r.getTokensUsed());
       return map;
     }).toList();
+
+    int totalCalls = records.size();
+    long totalTokens = records.stream().mapToLong(r -> r.getTokensUsed() != null ? r.getTokensUsed() : 0).sum();
+    long avgTokens = totalCalls > 0 ? (totalTokens / totalCalls) : 0;
+    double estCost = totalTokens * 0.002 / 1000.0; // Assume $0.002 per 1K tokens
+
+    model.addAttribute("totalCalls", totalCalls);
+    model.addAttribute("avgTokens", avgTokens);
+    model.addAttribute("estCost", String.format("%.4f", estCost));
+
     model.addAttribute("reviews", reviews);
     return "history";
   }

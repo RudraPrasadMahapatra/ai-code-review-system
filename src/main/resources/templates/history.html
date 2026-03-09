@@ -49,10 +49,28 @@
         </header>
 
         <div class="main-content">
-            <div class="dashboard-header">
-                <h2>Review History</h2>
-                <p>Your previous AI code review submissions and their quality scores.</p>
+            <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h2>Review History</h2>
+                    <p>Your previous AI code review submissions and their quality scores.</p>
+                </div>
+                <div class="cost-dashboard" style="display:flex; gap:16px; background:rgba(0,0,0,0.1); padding:12px 20px; border-radius:8px; border:1px solid var(--panel-border);">
+                    <div style="text-align:center;">
+                        <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted);">AI Calls</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--text-primary);" th:text="${totalCalls}">0</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted);">Avg. Tokens</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--accent);" th:text="${avgTokens}">0</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted);">Est. Cost</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--severity-success);">$<span th:text="${estCost}">0.00</span></div>
+                    </div>
+                </div>
             </div>
+
+            <style> [data-theme="light"] .cost-dashboard { background: rgba(0,0,0,0.03) !important; border-color: #e2e4e9 !important; } </style>
 
             <div class="table-container">
                 <table class="history-table">
@@ -61,6 +79,7 @@
                             <th>ID</th>
                             <th>Lang</th>
                             <th>Date</th>
+                            <th>Tokens</th>
                             <th>Score</th>
                             <th>Issues</th>
                             <th>Complexity</th>
@@ -69,7 +88,7 @@
                     </thead>
                     <tbody>
                         <tr th:if="${reviews == null or reviews.isEmpty()}">
-                            <td colspan="7" class="empty-state">
+                            <td colspan="8" class="empty-state">
                                 <div class="empty-icon">
                                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                 </div>
@@ -83,6 +102,7 @@
                                 <span class="badge lang-badge" th:text="${review.language}">Java</span>
                             </td>
                             <td th:text="${review.createdAt}">Date</td>
+                            <td th:text="${review.tokensUsed != null ? review.tokensUsed : 'N/A'}">0</td>
                             <td>
                                 <div class="score-indicator" th:if="${review.score != null}"
                                      th:classappend="${review.score >= 8 ? 'score-high' : (review.score >= 5 ? 'score-med' : 'score-low')}">

@@ -41,6 +41,7 @@ public class CodeReviewRecord {
   private Instant createdAt;
 
   private Integer score;
+  private String contentHash;
   private String timeComplexity;
   private String spaceComplexity;
   private Integer tokensUsed;
@@ -158,6 +159,14 @@ public class CodeReviewRecord {
 
   public void setExecutionTimeMs(Long executionTimeMs) {
     this.executionTimeMs = executionTimeMs;
+  }
+
+  public String getContentHash() {
+    return contentHash;
+  }
+
+  public void setContentHash(String contentHash) {
+    this.contentHash = contentHash;
   }
 }
 

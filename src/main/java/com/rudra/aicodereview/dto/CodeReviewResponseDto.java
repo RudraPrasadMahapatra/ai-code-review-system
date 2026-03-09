@@ -8,6 +8,8 @@ public record CodeReviewResponseDto(
     String timeComplexity,
     String spaceComplexity,
     String optimizedCode,
-    List<AiReviewFinding> findings
+    List<AiReviewFinding> findings,
+    Integer tokensUsed,
+    Long executionTimeMs
 ) {}
 
