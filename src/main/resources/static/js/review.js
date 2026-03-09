@@ -214,6 +214,20 @@ document.addEventListener('DOMContentLoaded', () => {
         editor.focus();
         editor.performLint(); // trigger linting on load
     }, 100);
+
+    // Highlight lines with issues from AI findings
+    setTimeout(() => {
+      document.querySelectorAll('.finding').forEach(finding => {
+        const lineStartAttr = finding.getAttribute('data-line-start');
+        const severity = finding.getAttribute('data-severity');
+        if (lineStartAttr && lineStartAttr !== 'null' && severity) {
+          const lineNum = parseInt(lineStartAttr, 10);
+          if (!isNaN(lineNum) && lineNum > 0) {
+            editor.addLineClass(lineNum - 1, "background", "cm-highlight-" + severity);
+          }
+        }
+      });
+    }, 200);
   }
 
   // Language change → update syntax highlighting
@@ -281,6 +295,42 @@ document.addEventListener('DOMContentLoaded', () => {
       'ruby':       'ruby',
     };
     return modes[l] || 'text/x-java';
+  }
+
+  // --- Left Sidebar History Fetch ---
+  const recentList = document.getElementById("recent-reviews-list");
+  if (recentList) {
+    fetch('/review/history')
+      .then(res => res.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const rows = doc.querySelectorAll('.history-table tbody tr');
+        let hasData = false;
+        
+        recentList.innerHTML = '';
+        
+        rows.forEach(row => {
+            if (!row.querySelector('.empty-state')) {
+                hasData = true;
+                const idCell = row.cells[0]?.textContent.trim() || '';
+                const langCell = row.cells[1]?.textContent.trim() || '';
+                
+                const item = document.createElement('a');
+                item.className = 'explorer-item';
+                item.href = '/review/history';
+                item.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/></svg> ${idCell} (${langCell})`;
+                recentList.appendChild(item);
+            }
+        });
+        
+        if (!hasData) {
+            recentList.innerHTML = '<div class="text-muted" style="padding: 4px 8px; font-size: 11px;">No history found.</div>';
+        }
+      })
+      .catch(err => {
+         recentList.innerHTML = '<div class="text-muted" style="padding: 4px 8px; font-size: 11px;">Could not load history.</div>';
+      });
   }
 
   // --- Category Filtering ---

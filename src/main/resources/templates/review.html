@@ -59,6 +59,33 @@
         </button>
       </aside>
 
+      <!-- Left Sidebar: File Explorer / History -->
+      <aside class="file-explorer" id="file-explorer">
+          <div class="explorer-header">
+              <span>Workspace</span>
+          </div>
+          <div class="explorer-content">
+              <div class="explorer-section">
+                  <div class="explorer-section-title">Open Editors</div>
+                  <div class="explorer-item active">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/></svg>
+                      Current Snippet
+                  </div>
+              </div>
+              <div class="explorer-section" style="margin-top: 16px;">
+                  <div class="explorer-section-title" style="display: flex; justify-content: space-between;">
+                      <span>Recent Reviews</span>
+                      <a th:href="@{/review/history}" title="View History" style="color: var(--text-muted);">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      </a>
+                  </div>
+                  <div id="recent-reviews-list" class="recent-list">
+                      <div class="text-muted" style="padding: 4px 8px; font-size: 11px;">Loading history...</div>
+                  </div>
+              </div>
+          </div>
+      </aside>
+
       <!-- Main Area -->
       <main class="app-main">
         <header class="top-header">
@@ -159,28 +186,50 @@
                         </div>
                         <div class="message-body">
 
-                            <!-- Score Gauge -->
-                            <div th:if="${reviewResponse.score() != null}" class="score-gauge">
-                                <div class="score-ring-container">
-                                    <svg class="score-ring" viewBox="0 0 72 72">
-                                        <circle class="score-ring-track" cx="36" cy="36" r="30"/>
-                                        <circle class="score-ring-fill" id="score-ring-fill"
-                                                th:classappend="${reviewResponse.score() >= 8 ? 'score-high' : (reviewResponse.score() >= 5 ? 'score-med' : 'score-low')}"
-                                                cx="36" cy="36" r="30"
-                                                th:attr="data-score=${reviewResponse.score()}"
-                                                stroke-dasharray="188.5"
-                                                stroke-dashoffset="188.5"/>
-                                    </svg>
-                                    <div class="score-value">
-                                        <span th:text="${reviewResponse.score()}">8</span><small>/10</small>
+                            <!-- Code Quality Score Card -->
+                            <div class="scorecard" th:if="${reviewResponse.score() != null or reviewResponse.findings() != null}" style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.1); border: 1px solid var(--panel-border); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                <div th:if="${reviewResponse.score() != null}" class="score-gauge" style="margin: 0;">
+                                    <div class="score-ring-container">
+                                        <svg class="score-ring" viewBox="0 0 72 72">
+                                            <circle class="score-ring-track" cx="36" cy="36" r="30"/>
+                                            <circle class="score-ring-fill" id="score-ring-fill"
+                                                    th:classappend="${reviewResponse.score() >= 8 ? 'score-high' : (reviewResponse.score() >= 5 ? 'score-med' : 'score-low')}"
+                                                    cx="36" cy="36" r="30"
+                                                    th:attr="data-score=${reviewResponse.score()}"
+                                                    stroke-dasharray="188.5"
+                                                    stroke-dashoffset="188.5"/>
+                                        </svg>
+                                        <div class="score-value">
+                                            <span th:text="${reviewResponse.score()}">8</span><small>/10</small>
+                                        </div>
+                                    </div>
+                                    <div class="score-details" style="margin-left: 16px;">
+                                        <span class="score-label">Quality Score</span>
+                                        <span class="score-remark"
+                                              th:text="${reviewResponse.score() >= 9 ? 'Excellent' : (reviewResponse.score() >= 7 ? 'Good' : (reviewResponse.score() >= 5 ? 'Needs Improvement' : 'Poor'))}">Good</span>
                                     </div>
                                 </div>
-                                <div class="score-details">
-                                    <span class="score-label">Quality Score</span>
-                                    <span class="score-remark"
-                                          th:text="${reviewResponse.score() >= 9 ? 'Excellent' : (reviewResponse.score() >= 7 ? 'Good' : (reviewResponse.score() >= 5 ? 'Needs Improvement' : 'Poor'))}">Good</span>
+                                
+                                <div class="scorecard-stats" th:if="${reviewResponse.findings() != null}" style="display: flex; gap: 24px; text-align: center;">
+                                    <div>
+                                        <div style="font-size: 20px; font-weight: bold; color: var(--text-primary);" th:text="${#lists.size(reviewResponse.findings())}">0</div>
+                                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Total Issues</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 20px; font-weight: bold; color: var(--severity-err);" th:text="${reviewResponse.findings().?[severity.name() == 'ERROR'].size()}">0</div>
+                                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Errors</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 20px; font-weight: bold; color: var(--severity-warn);" th:text="${reviewResponse.findings().?[severity.name() == 'WARNING'].size()}">0</div>
+                                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Warnings</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 20px; font-weight: bold; color: var(--severity-info);" th:text="${reviewResponse.findings().?[severity.name() == 'INFO'].size()}">0</div>
+                                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Info</div>
+                                    </div>
                                 </div>
                             </div>
+                            <style> [data-theme="light"] .scorecard { background: rgba(0,0,0,0.02) !important; border-color: #e2e4e9 !important; } </style>
 
                             <!-- Complexity Metrics -->
                             <div class="metrics-row" th:if="${reviewResponse.timeComplexity() != null or reviewResponse.spaceComplexity() != null}">
@@ -220,7 +269,7 @@
                                     <li th:each="f : ${reviewResponse.findings()}" 
                                         class="finding"
                                         th:classappend="'severity-' + ${#strings.toLowerCase(f.severity().toString())}"
-                                        th:attr="data-category=${f.category()}">
+                                        th:attr="data-category=${f.category()}, data-line-start=${f.lineStart()}, data-severity=${#strings.toLowerCase(f.severity().toString())}">
                                         <div class="finding-head">
                                             <span class="severity-badge"
                                                   th:classappend="'sev-' + ${#strings.toLowerCase(f.severity().toString())}"
@@ -237,15 +286,20 @@
 
                             <!-- Optimized Code -->
                             <div class="optimized-code-block" th:if="${reviewResponse.optimizedCode() != null and reviewResponse.optimizedCode() != ''}">
-                                <div class="optimized-header">
-                                    <h4>Suggested Optimization</h4>
-                                    <button class="copy-btn" id="copy-optimized-btn" type="button">
+                                <div class="optimized-header" style="cursor: pointer;" onclick="document.getElementById('opt-code-content').style.display = document.getElementById('opt-code-content').style.display === 'none' ? 'block' : 'none';">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                        <h4>Suggested Improved Code</h4>
+                                    </div>
+                                    <button class="copy-btn" id="copy-optimized-btn" type="button" onclick="event.stopPropagation();">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                         Copy
                                     </button>
                                 </div>
-                                <div class="assistant-summary markdown-body" id="raw-optimized" th:text="${reviewResponse.optimizedCode()}" style="display:none;"></div>
-                                <div class="assistant-summary markdown-body" id="rendered-optimized"></div>
+                                <div id="opt-code-content" style="display: none;">
+                                    <div class="assistant-summary markdown-body" id="raw-optimized" th:text="${reviewResponse.optimizedCode()}" style="display:none;"></div>
+                                    <div class="assistant-summary markdown-body" id="rendered-optimized"></div>
+                                </div>
                             </div>
                         </div>
                     </div>

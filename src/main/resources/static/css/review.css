@@ -171,6 +171,68 @@ html:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
 html[data-theme="light"] .theme-toggle .icon-sun { display: none; }
 html[data-theme="light"] .theme-toggle .icon-moon { display: block; }
 
+/* ── File Explorer ── */
+.file-explorer {
+  width: 250px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s ease;
+  z-index: 10;
+}
+.explorer-header {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.explorer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+.explorer-section-title {
+  padding: 4px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.explorer-item {
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+.explorer-item:hover {
+  background: rgba(255,255,255,0.03);
+  color: var(--text-primary);
+}
+[data-theme="light"] .explorer-item:hover { background: rgba(0,0,0,0.03); }
+.explorer-item.active {
+  background: rgba(59,130,246,0.1);
+  color: var(--accent-color);
+  border-left: 2px solid var(--accent-color);
+}
+.recent-list {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── Main Area ── */
 .app-main {
   flex: 1;
@@ -319,6 +381,16 @@ html[data-theme="light"] .theme-toggle .icon-moon { display: block; }
   border-right: none !important;
 }
 .CodeMirror-linenumber { color: #52525b !important; }
+
+/* ── Editor Line Highlights ── */
+.cm-highlight-error { background: rgba(239, 68, 68, 0.2) !important; }
+.cm-highlight-warning { background: rgba(245, 158, 11, 0.2) !important; }
+.cm-highlight-info { background: rgba(59, 130, 246, 0.2) !important; }
+
+[data-theme="light"] .cm-highlight-error { background: rgba(220, 38, 38, 0.15) !important; }
+[data-theme="light"] .cm-highlight-warning { background: rgba(217, 119, 6, 0.15) !important; }
+[data-theme="light"] .cm-highlight-info { background: rgba(37, 99, 235, 0.15) !important; }
+
 [data-theme="light"] .CodeMirror-linenumber { color: #94a3b8 !important; }
 
 .CodeMirror-vscrollbar, .CodeMirror-hscrollbar {
