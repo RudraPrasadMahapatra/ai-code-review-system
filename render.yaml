@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ai-code-reviewer
+    env: docker
+    plan: free
+    region: frankfurt # Can be skipped or changed to oregon
+    autoDeploy: true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PORT
+        value: 8081
