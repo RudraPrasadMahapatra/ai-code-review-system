@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Review - History</title>
+    <meta name="description" content="Browse your past AI code review submissions, scores, and complexity analysis." />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/history.css}">
+</head>
+<body>
+
+<div class="app">
+    <!-- Activity Bar -->
+    <aside class="activity-bar">
+        <a href="/" class="brand-icon" title="AI Code Reviewer">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+        </a>
+        <a th:href="@{/review}" class="nav-item" title="Code Review">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </a>
+        <a th:href="@{/review/history}" class="nav-item active" title="Review History">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </a>
+    </aside>
+
+    <main class="app-main">
+        <header class="top-header">
+             ai-code-reviewer — workspace
+        </header>
+
+        <div class="main-content">
+            <div class="dashboard-header">
+                <h2>Review History</h2>
+                <p>Your previous AI code review submissions and their quality scores.</p>
+            </div>
+
+            <div class="table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Lang</th>
+                            <th>Date</th>
+                            <th>Score</th>
+                            <th>Issues</th>
+                            <th>Complexity</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${reviews == null or reviews.isEmpty()}">
+                            <td colspan="7" class="empty-state">
+                                <div class="empty-icon">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                </div>
+                                <div class="empty-title">No reviews yet</div>
+                                <div class="empty-desc">Submit your first code review to see it here.</div>
+                            </td>
+                        </tr>
+                        <tr th:each="review : ${reviews}">
+                            <td th:text="${'#' + review.id}">#1</td>
+                            <td>
+                                <span class="badge lang-badge" th:text="${review.language}">Java</span>
+                            </td>
+                            <td th:text="${review.createdAt}">Date</td>
+                            <td>
+                                <div class="score-indicator" th:if="${review.score != null}"
+                                     th:classappend="${review.score >= 8 ? 'score-high' : (review.score >= 5 ? 'score-med' : 'score-low')}">
+                                    <span th:text="${review.score + '/10'}">8/10</span>
+                                </div>
+                                <span th:if="${review.score == null}" class="text-muted">N/A</span>
+                            </td>
+                            <td>
+                                <span class="issues-count" th:text="${review.findingsCount}">0</span>
+                            </td>
+                            <td>
+                                <div class="complexities" th:if="${review.timeComplexity != null}">
+                                    <span class="badge complex" th:text="${'T: ' + review.timeComplexity}"></span>
+                                    <span class="badge complex" th:if="${review.spaceComplexity != null}" th:text="${'S: ' + review.spaceComplexity}"></span>
+                                </div>
+                                <span th:if="${review.timeComplexity == null}" class="text-muted">N/A</span>
+                            </td>
+                            <td>
+                                <span class="badge status-badge"
+                                      th:classappend="${review.status == 'COMPLETED' ? 'status-completed' : (review.status == 'FAILED' ? 'status-failed' : 'status-pending')}"
+                                      th:text="${review.status}">COMPLETED</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

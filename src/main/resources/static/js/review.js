@@ -5,9 +5,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const langSelect = document.getElementById("language");
   const loadingIndicator = document.getElementById("loading-indicator");
   const chatWindow = document.getElementById("chat-window");
-  const messagesList = document.getElementById("messages");
+  const fileInput = document.getElementById("file-upload");
+  const fileNameDisplay = document.getElementById("file-name");
 
-  // Keep chat scrolled to bottom
+  // File upload display
+  if (fileInput && fileNameDisplay) {
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        fileNameDisplay.textContent = e.target.files[0].name;
+      } else {
+        fileNameDisplay.textContent = "";
+      }
+      updateSubmitState();
+    });
+  }
+
+  // Scroll chat to bottom
   function scrollToBottom() {
     if (chatWindow) {
       chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -15,14 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   setTimeout(scrollToBottom, 50);
 
-  // Initialize CodeMirror 6 (which is actually exposed globally as CodeMirror in the legacy v5 cdn link used, 
-  // but we included the v5 scripts per standard non-module setups to avoid build tools).
-  // Setup CodeMirror instance
+  // Initialize CodeMirror
   let editor = null;
   if (textarea && typeof CodeMirror !== 'undefined') {
     editor = CodeMirror(document.getElementById("editor-container"), {
       value: textarea.value || "",
-      mode: getCodeMirrorMode(langSelect ? langSelect.value : 'Java'),
+      mode: getCodeMirrorMode(langSelect ? langSelect.value : 'java'),
       theme: "material-ocean",
       lineNumbers: true,
       matchBrackets: true,
@@ -41,78 +52,80 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Sync CodeMirror changes to hidden textarea
+    // Sync CodeMirror → hidden textarea
     editor.on("change", () => {
       textarea.value = editor.getValue();
       updateSubmitState();
     });
-    
-    // Focus automatically
+
+    // Auto-focus
     setTimeout(() => editor.focus(), 100);
   }
 
-  // Handle language change for syntax highlighting
+  // Language change → update syntax highlighting
   if (langSelect && editor) {
     langSelect.addEventListener("change", (e) => {
       editor.setOption("mode", getCodeMirrorMode(e.target.value));
     });
   }
 
-  // Enable/disable submit button based on content
+  // Enable/disable submit
   function updateSubmitState() {
-    if (!submitBtn || !textarea) return;
-    const isEmpty = textarea.value.trim() === '';
-    submitBtn.disabled = isEmpty;
-    if (isEmpty) {
-        submitBtn.style.opacity = '0.5';
-        submitBtn.style.cursor = 'not-allowed';
-    } else {
-        submitBtn.style.opacity = '1';
-        submitBtn.style.cursor = 'pointer';
-    }
+    if (!submitBtn) return;
+    const hasCode = textarea && textarea.value.trim() !== '';
+    const hasFile = fileInput && fileInput.files.length > 0;
+    const canSubmit = hasCode || hasFile;
+    submitBtn.disabled = !canSubmit;
   }
 
   if (textarea) updateSubmitState();
 
-  // Form Submission & Loading State
+  // Form submission with loading state
   if (form) {
     form.addEventListener('submit', (e) => {
-      // Ensure sync one last time
       if (editor) textarea.value = editor.getValue();
 
-      if (textarea.value.trim() === '') {
+      const hasCode = textarea && textarea.value.trim() !== '';
+      const hasFile = fileInput && fileInput.files.length > 0;
+
+      if (!hasCode && !hasFile) {
         e.preventDefault();
         return;
       }
 
-      // Show loading state
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = `
+            <div class="spinner" style="width:14px;height:14px;border-width:2px;"></div>
             <span>Analyzing...</span>
-            <svg class="spinner" viewBox="0 0 50 50" style="width:16px; height:16px; border:none; animation: spin 1s linear infinite;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="31.4 31.4" stroke-linecap="round"></circle></svg>
         `;
       }
-      
-      // Hide empty state if exists
-      const emptyState = document.querySelector('.empty-state');
-      if (emptyState) emptyState.style.display = 'none';
 
-      // Show loading indicator in chat
       if (loadingIndicator) {
-          loadingIndicator.style.display = 'flex';
-          scrollToBottom();
+        loadingIndicator.style.display = 'flex';
+        scrollToBottom();
       }
     });
   }
 
-  // map java/spring languages to codemirror modes
+  /**
+   * Map language names to CodeMirror mode identifiers.
+   * Covers all 10 languages supported by the app.
+   */
   function getCodeMirrorMode(lang) {
     const l = (lang || "").toLowerCase();
-    if (l.includes("java")) return "text/x-java";
-    if (l.includes("python")) return "python";
-    if (l.includes("javascript") || l.includes("ts") || l.includes("node")) return "javascript";
-    if (l.includes("xml") || l.includes("html")) return "xml";
-    return "text/x-java"; // default
+    const modes = {
+      'java':       'text/x-java',
+      'kotlin':     'text/x-kotlin',
+      'csharp':     'text/x-csharp',
+      'cpp':        'text/x-c++src',
+      'javascript': 'javascript',
+      'typescript': 'application/typescript',
+      'python':     'python',
+      'go':         'go',
+      'rust':       'rust',
+      'ruby':       'ruby',
+    };
+    return modes[l] || 'text/x-java';
   }
 });

@@ -40,6 +40,12 @@ public class CodeReviewRecord {
   @Column(nullable = false, updatable = false)
   private Instant createdAt;
 
+  private Integer score;
+  private String timeComplexity;
+  private String spaceComplexity;
+  private Integer tokensUsed;
+  private Long executionTimeMs;
+
   @OneToMany(mappedBy = "codeReview", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<CodeIssue> findings = new ArrayList<>();
 
@@ -112,6 +118,46 @@ public class CodeReviewRecord {
 
   public void setFindings(List<CodeIssue> findings) {
     this.findings = findings;
+  }
+
+  public Integer getScore() {
+    return score;
+  }
+
+  public void setScore(Integer score) {
+    this.score = score;
+  }
+
+  public String getTimeComplexity() {
+    return timeComplexity;
+  }
+
+  public void setTimeComplexity(String timeComplexity) {
+    this.timeComplexity = timeComplexity;
+  }
+
+  public String getSpaceComplexity() {
+    return spaceComplexity;
+  }
+
+  public void setSpaceComplexity(String spaceComplexity) {
+    this.spaceComplexity = spaceComplexity;
+  }
+
+  public Integer getTokensUsed() {
+    return tokensUsed;
+  }
+
+  public void setTokensUsed(Integer tokensUsed) {
+    this.tokensUsed = tokensUsed;
+  }
+
+  public Long getExecutionTimeMs() {
+    return executionTimeMs;
+  }
+
+  public void setExecutionTimeMs(Long executionTimeMs) {
+    this.executionTimeMs = executionTimeMs;
   }
 }
 

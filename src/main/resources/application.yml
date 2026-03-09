@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   thymeleaf:
     cache: false
   datasource:
@@ -23,7 +25,7 @@ spring:
         options:
           model: gpt-4o-mini
           temperature: 0.2
-          max-tokens: 400
+          max-tokens: 4096
 
 aicodereview:
   ai:

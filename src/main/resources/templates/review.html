@@ -4,20 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI Code Review</title>
-    <!-- Fonts -->
+    <meta name="description" content="AI-powered code review tool — get quality scores, complexity analysis, and optimization suggestions instantly." />
+
+    <!-- Fonts: Inter for UI, JetBrains Mono for Code -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- CodeMirror 6 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/material-ocean.min.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/clike/clike.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/python/python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/xml/xml.min.js"></script>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- CodeMirror 5 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-ocean.min.css"/>
+    <!-- Language modes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/ruby/ruby.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+    <!-- Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+
     <!-- Markdown Parsers -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
@@ -27,107 +36,180 @@
   </head>
   <body>
     <div class="app">
-      <aside class="app-sidebar">
-        <div class="brand-container">
-            <div class="logo-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
-            </div>
-            <div>
-                <h1 class="brand">AI Reviewer</h1>
-                <p class="brand-sub">Powered by Rudra</p>
-            </div>
-        </div>
-        
-        <div class="sidebar-nav">
-             <div class="nav-item active">
-                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                 Code Review
-             </div>
-        </div>
+      <!-- Activity Bar -->
+      <aside class="activity-bar">
+        <a href="/" class="brand-icon" title="AI Code Reviewer">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+        </a>
+        <a th:href="@{/review}" class="nav-item active" title="Code Review">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </a>
+        <a th:href="@{/review/history}" class="nav-item" title="Review History">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </a>
       </aside>
 
+      <!-- Main Area -->
       <main class="app-main">
-        <header class="chat-header">
-             <div class="header-title">New Review Session</div>
-             <div class="header-status">
-                 <span class="status-dot"></span> Ready
-             </div>
+        <header class="top-header">
+             ai-code-reviewer — workspace
         </header>
 
         <section class="split-layout">
-            <!-- Left Side: Editor Form -->
+            <!-- Left: Editor Pane -->
             <div class="editor-pane">
-                <form th:action="@{/review}" th:object="${form}" method="post" class="composer" id="review-form">
-                    <div class="composer-top">
-                        <label for="language" class="lang-label">Language</label>
+                <div class="editor-top">
+                    <div class="editor-tab active">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/></svg>
+                        Snippet.java
+                    </div>
+                </div>
+
+                <form th:action="@{/review}" th:object="${form}" method="post" enctype="multipart/form-data" class="composer" id="review-form">
+                    <div class="composer-toolbar">
                         <select id="language" th:field="*{language}" class="select">
                         <option th:each="lang : ${languages}" th:value="${lang}" th:text="${lang}"></option>
                         </select>
                         <div class="error" th:if="${#fields.hasErrors('language')}" th:errors="*{language}"></div>
                     </div>
 
-                    <!-- Hidden textarea mapped to Spring Model -->
                     <textarea id="code" th:field="*{code}" style="display:none;"></textarea>
-                    
-                    <!-- CodeMirror mounts here -->
                     <div id="editor-container" class="editor-container"></div>
-                    
+
                     <div class="composer-actions">
-                        <button type="submit" class="button button-primary" id="submit-btn">
-                            <span>Analyze Code</span>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="file-upload" th:field="*{file}" class="file-input" accept=".java,.kt,.py,.js,.ts,.go,.rs,.cs,.cpp,.rb"/>
+                            <label for="file-upload" class="file-label">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                Upload File
+                            </label>
+                            <span id="file-name" class="file-name-display"></span>
+                        </div>
+                        <button type="submit" class="button-primary" id="submit-btn" title="Analyze Code (Cmd+Enter)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                            Review Code
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Right Side: AI Response Chat -->
+            <!-- Right: AI Review Pane -->
             <div class="chat-window" id="chat-window">
-                <ul id="messages" class="messages">
-                    <li th:if="${form == null or form.code == null or form.code == ''}" class="empty-state">
-                        <div class="empty-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/></svg>
-                        </div>
-                        <h3>Waiting for Code</h3>
-                        <p>Paste your snippet on the left and hit Analyze.</p>
-                    </li>
+                <header class="chat-header">
+                    <span class="chat-header-dot"></span>
+                    AI Review
+                </header>
+                <div class="chat-content">
 
-                    <!-- If there's an error show assistant error bubble -->
-                    <li th:if="${reviewError}" class="message message-assistant show">
-                        <div class="avatar">AI</div>
-                        <div class="bubble error-bubble">
-                            <div class="assistant-error" th:text="${reviewError}"></div>
+                    <!-- Empty State -->
+                    <div th:if="${reviewResponse == null and reviewError == null}" class="message">
+                        <div class="message-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            AI Reviewer
                         </div>
-                    </li>
+                        <div class="message-body text-muted">
+                            Paste a code snippet in the editor or upload a file, then hit <strong>Review Code</strong> to get started.
+                        </div>
+                    </div>
 
-                    <!-- If there's a response show assistant bubble -->
-                    <li th:if="${reviewResponse}" class="message message-assistant show">
-                        <div class="avatar">AI</div>
-                        <div class="bubble">
-                            <div class="assistant-summary markdown-body" id="raw-summary" th:text="${reviewResponse.summary}" style="display:none;"></div>
+                    <!-- Loading Skeleton -->
+                    <div id="loading-indicator" class="loading-indicator" style="display:none;">
+                         <div class="spinner"></div>
+                         Analyzing your code...
+                    </div>
+
+                    <!-- Error -->
+                    <div th:if="${reviewError}" class="message">
+                        <div class="message-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Error
+                        </div>
+                        <div class="message-body error-text" th:text="${reviewError}"></div>
+                    </div>
+
+                    <!-- AI Response -->
+                    <div th:if="${reviewResponse}" class="message">
+                        <div class="message-header">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                            AI Reviewer
+                        </div>
+                        <div class="message-body">
+
+                            <!-- Score Gauge -->
+                            <div th:if="${reviewResponse.score() != null}" class="score-gauge">
+                                <div class="score-ring-container">
+                                    <svg class="score-ring" viewBox="0 0 72 72">
+                                        <circle class="score-ring-track" cx="36" cy="36" r="30"/>
+                                        <circle class="score-ring-fill" id="score-ring-fill"
+                                                th:classappend="${reviewResponse.score() >= 8 ? 'score-high' : (reviewResponse.score() >= 5 ? 'score-med' : 'score-low')}"
+                                                cx="36" cy="36" r="30"
+                                                th:attr="data-score=${reviewResponse.score()}"
+                                                stroke-dasharray="188.5"
+                                                stroke-dashoffset="188.5"/>
+                                    </svg>
+                                    <div class="score-value">
+                                        <span th:text="${reviewResponse.score()}">8</span><small>/10</small>
+                                    </div>
+                                </div>
+                                <div class="score-details">
+                                    <span class="score-label">Quality Score</span>
+                                    <span class="score-remark"
+                                          th:text="${reviewResponse.score() >= 9 ? 'Excellent' : (reviewResponse.score() >= 7 ? 'Good' : (reviewResponse.score() >= 5 ? 'Needs Improvement' : 'Poor'))}">Good</span>
+                                </div>
+                            </div>
+
+                            <!-- Complexity Metrics -->
+                            <div class="metrics-row" th:if="${reviewResponse.timeComplexity() != null or reviewResponse.spaceComplexity() != null}">
+                                <div class="metric-pill" th:if="${reviewResponse.timeComplexity() != null}">
+                                    <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    Time: <span th:text="${reviewResponse.timeComplexity()}"></span>
+                                </div>
+                                <div class="metric-pill" th:if="${reviewResponse.spaceComplexity() != null}">
+                                    <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                    Space: <span th:text="${reviewResponse.spaceComplexity()}"></span>
+                                </div>
+                            </div>
+
+                            <!-- Summary -->
+                            <div class="assistant-summary markdown-body" id="raw-summary" th:text="${reviewResponse.summary()}" style="display:none;"></div>
                             <div class="assistant-summary markdown-body" id="rendered-summary"></div>
 
-                            <div th:if="${reviewResponse.findings != null and !reviewResponse.findings.isEmpty()}">
+                            <!-- Findings -->
+                            <div th:if="${reviewResponse.findings() != null and !reviewResponse.findings().isEmpty()}">
+                                <div class="findings-section-header">
+                                    <h4>Findings</h4>
+                                    <span class="findings-count" th:text="${#lists.size(reviewResponse.findings())}"></span>
+                                </div>
                                 <ul class="findings">
-                                    <li th:each="f : ${reviewResponse.findings}" th:class="'finding severity-' + ${#strings.toLowerCase(f.severity.toString())}">
-                                    <div class="finding-head">
-                                        <span class="sev" th:text="${f.severity}"></span>
-                                        <span class="rule" th:if="${f.ruleId}" th:text="${f.ruleId}"></span>
-                                        <span class="lines" th:if="${f.lineStart != null}" th:text="${f.lineEnd != null ? 'Lines ' + f.lineStart + '-' + f.lineEnd : 'Line ' + f.lineStart}"></span>
-                                    </div>
-                                    <div class="msg" th:text="${f.message}"></div>
-                                    <div class="sug" th:if="${f.suggestion}" th:text="${f.suggestion}"></div>
+                                    <li th:each="f : ${reviewResponse.findings()}" th:class="'finding severity-' + ${#strings.toLowerCase(f.severity().toString())}">
+                                        <div class="finding-head">
+                                            <span class="severity-badge"
+                                                  th:classappend="'sev-' + ${#strings.toLowerCase(f.severity().toString())}"
+                                                  th:text="${f.severity()}"></span>
+                                            <span class="rule" th:if="${f.ruleId()}" th:text="${f.ruleId()}"></span>
+                                            <span class="lines" th:if="${f.lineStart() != null}" th:text="${f.lineEnd() != null ? 'L' + f.lineStart() + '-' + f.lineEnd() : 'L' + f.lineStart()}"></span>
+                                        </div>
+                                        <div class="msg" th:text="${f.message()}"></div>
+                                        <div class="sug" th:if="${f.suggestion()}" th:text="${f.suggestion()}"></div>
                                     </li>
                                 </ul>
                             </div>
+
+                            <!-- Optimized Code -->
+                            <div class="optimized-code-block" th:if="${reviewResponse.optimizedCode() != null and reviewResponse.optimizedCode() != ''}">
+                                <div class="optimized-header">
+                                    <h4>Suggested Optimization</h4>
+                                    <button class="copy-btn" id="copy-optimized-btn" type="button">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                        Copy
+                                    </button>
+                                </div>
+                                <div class="assistant-summary markdown-body" id="raw-optimized" th:text="${reviewResponse.optimizedCode()}" style="display:none;"></div>
+                                <div class="assistant-summary markdown-body" id="rendered-optimized"></div>
+                            </div>
                         </div>
-                    </li>
-                </ul>
-                
-                <!-- Loading State (hidden by default) -->
-                <div id="loading-indicator" class="loading-state" style="display:none;">
-                     <div class="spinner"></div>
-                     <p>Analyzing code with AI...</p>
+                    </div>
+
                 </div>
             </div>
         </section>
@@ -137,13 +219,54 @@
     <!-- Scripts -->
     <script th:src="@{/js/review.js}"></script>
     <script>
-      // Render markdown safely if response exists
       document.addEventListener("DOMContentLoaded", () => {
+          // Render summary markdown
           const rawSummary = document.getElementById("raw-summary");
           const renderedSummary = document.getElementById("rendered-summary");
           if (rawSummary && renderedSummary) {
               const html = DOMPurify.sanitize(marked.parse(rawSummary.textContent || ""));
               renderedSummary.innerHTML = html;
+          }
+
+          // Render optimized code as markdown code block
+          const rawOp = document.getElementById("raw-optimized");
+          const renderedOp = document.getElementById("rendered-optimized");
+          if (rawOp && renderedOp) {
+              const html = DOMPurify.sanitize(marked.parse("```\n" + rawOp.textContent + "\n```"));
+              renderedOp.innerHTML = html;
+          }
+
+          // Animate score ring
+          const ring = document.getElementById("score-ring-fill");
+          if (ring) {
+              const score = parseInt(ring.getAttribute("data-score") || "0", 10);
+              const circumference = 188.5;
+              const offset = circumference - (score / 10) * circumference;
+              setTimeout(() => { ring.style.strokeDashoffset = offset; }, 100);
+          }
+
+          // Copy optimized code
+          const copyBtn = document.getElementById("copy-optimized-btn");
+          if (copyBtn && rawOp) {
+              copyBtn.addEventListener("click", () => {
+                  navigator.clipboard.writeText(rawOp.textContent || "").then(() => {
+                      copyBtn.classList.add("copied");
+                      copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+                      setTimeout(() => {
+                          copyBtn.classList.remove("copied");
+                          copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+                      }, 2000);
+                  });
+              });
+          }
+
+          // Loading state on form submit
+          const form = document.getElementById('review-form');
+          const loadingIndicator = document.getElementById('loading-indicator');
+          if(form && loadingIndicator) {
+             form.addEventListener('submit', () => {
+                 loadingIndicator.style.display = 'flex';
+             });
           }
       });
     </script>

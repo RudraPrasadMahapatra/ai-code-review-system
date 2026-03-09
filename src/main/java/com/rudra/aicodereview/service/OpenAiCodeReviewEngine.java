@@ -2,10 +2,12 @@ package com.rudra.aicodereview.service;
 
 import com.rudra.aicodereview.entity.Severity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -13,27 +15,37 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnProperty(prefix = "aicodereview.ai", name = "provider", havingValue = "openai")
 public class OpenAiCodeReviewEngine implements CodeReviewEngine {
+  private static final Logger log = LoggerFactory.getLogger(OpenAiCodeReviewEngine.class);
+
   private static final String SYSTEM_PROMPT =
-		  """
-		  You are a senior software engineer performing a code review.
+      """
+      You are a senior software engineer performing a thorough code review.
+      You MUST respond with ONLY a single valid JSON object. No markdown, no code fences, no explanations.
 
-		  Return ONLY valid JSON. Do not include explanations, text, markdown, or code fences.
+      The JSON object MUST have exactly these top-level keys:
+      {
+        "score": <integer 1-10>,
+        "timeComplexity": "<string, e.g. O(N)>",
+        "spaceComplexity": "<string, e.g. O(1)>",
+        "optimizedCode": "<string containing the complete improved version of the code>",
+        "findings": [
+          {
+            "severity": "ERROR" | "WARNING" | "INFO",
+            "ruleId": "<short identifier, e.g. NULL_CHECK>",
+            "message": "<concise description of the issue>",
+            "lineStart": <integer or null>,
+            "lineEnd": <integer or null>,
+            "suggestion": "<how to fix it>"
+          }
+        ]
+      }
 
-		  Output must strictly match one of these formats:
-
-		  1) {"findings":[{...}]}
-		  2) [{...}]
-
-		  Each finding must include:
-		  - severity: INFO, WARNING, or ERROR
-		  - ruleId: optional string
-		  - message: required string
-		  - lineStart: integer or null
-		  - lineEnd: integer or null
-		  - suggestion: optional string
-
-		  Return maximum 5 findings ordered by severity (ERROR first).
-		  """;
+      Rules:
+      - "score" is an integer from 1 (terrible) to 10 (excellent).
+      - "optimizedCode" must contain the COMPLETE refactored version. No backticks or markdown.
+      - Return at most 5 findings, ordered by severity (ERROR first, then WARNING, then INFO).
+      - Do NOT wrap the JSON in markdown code fences or add any text outside the JSON object.
+      """;
 
   private static final String USER_PROMPT_TEMPLATE =
       """
@@ -57,50 +69,68 @@ public class OpenAiCodeReviewEngine implements CodeReviewEngine {
   }
 
   @Override
-  public List<Finding> review(String language, String content, String filePath) {
+  public ReviewResponse review(String language, String content, String filePath) {
+    long start = System.currentTimeMillis();
 
-	    long start = System.currentTimeMillis();
+    ChatResponse chatResponse =
+        chatClient
+            .prompt()
+            .system(SYSTEM_PROMPT)
+            .user(
+                user ->
+                    user.text(USER_PROMPT_TEMPLATE)
+                        .param("language", nullToEmpty(language))
+                        .param("filePath", nullToEmpty(filePath))
+                        .param("code", nullToEmpty(content)))
+            .call()
+            .chatResponse();
 
-	    String raw =
-	        chatClient
-	            .prompt()
-	            .system(SYSTEM_PROMPT)
-	            .user(
-	                user ->
-	                    user.text(USER_PROMPT_TEMPLATE)
-	                        .param("language", nullToEmpty(language))
-	                        .param("filePath", nullToEmpty(filePath))
-	                        .param("code", nullToEmpty(content)))
-	            .call()
-	            .content();
+    long executionTimeMs = System.currentTimeMillis() - start;
+    log.info("AI review completed in {} ms", executionTimeMs);
 
-	    long end = System.currentTimeMillis();
-	    System.out.println("AI review time: " + (end - start) + " ms");
+    String raw = chatResponse.getResult().getOutput().getText();
+    Integer tokens = null;
+    if (chatResponse.getMetadata() != null && chatResponse.getMetadata().getUsage() != null) {
+      tokens = Math.toIntExact(chatResponse.getMetadata().getUsage().getTotalTokens());
+      log.info("Tokens used: {}", tokens);
+    }
 
-	    String json = extractJson(raw);
-	    if (json.isBlank()) {
-	      return Collections.emptyList();
-	    }
+    String json = extractJson(raw);
+    if (json.isBlank()) {
+      log.warn("AI returned empty/unparseable response");
+      return emptyResponse(tokens, executionTimeMs);
+    }
 
-	    try {
-	      if (json.startsWith("[")) {
-	        List<GptFinding> findings = objectMapper.readValue(json, new TypeReference<List<GptFinding>>() {});
-	        return toFindings(findings);
-	      }
+    try {
+      GptResponse response = objectMapper.readValue(json, GptResponse.class);
+      List<Finding> mappedFindings = toFindings(response.findings());
+      return new ReviewResponse(
+          response.score(),
+          response.timeComplexity(),
+          response.spaceComplexity(),
+          response.optimizedCode(),
+          mappedFindings,
+          tokens,
+          executionTimeMs);
+    } catch (Exception ex) {
+      log.warn("Failed to parse AI JSON response: {}", ex.getMessage());
+      return new ReviewResponse(
+          null, null, null, null,
+          List.of(
+              new Finding(
+                  Severity.WARNING,
+                  "AI_PARSE",
+                  "AI response was not valid JSON in the expected schema.",
+                  null,
+                  null,
+                  truncate(raw, 4000))),
+          tokens, executionTimeMs);
+    }
+  }
 
-	      GptResponse response = objectMapper.readValue(json, GptResponse.class);
-	      return toFindings(response.findings());
-	    } catch (Exception ex) {
-	      return List.of(
-	          new Finding(
-	              Severity.WARNING,
-	              "AI_PARSE",
-	              "AI response was not valid JSON in the expected schema.",
-	              null,
-	              null,
-	              truncate(raw, 4000)));
-	    }
-	}
+  private ReviewResponse emptyResponse(Integer tokens, Long executionTimeMs) {
+    return new ReviewResponse(null, null, null, null, Collections.emptyList(), tokens, executionTimeMs);
+  }
 
   private static List<Finding> toFindings(List<GptFinding> gptFindings) {
     if (gptFindings == null || gptFindings.isEmpty()) {
@@ -200,7 +230,12 @@ public class OpenAiCodeReviewEngine implements CodeReviewEngine {
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  private record GptResponse(List<GptFinding> findings) {}
+  private record GptResponse(
+      Integer score,
+      String timeComplexity,
+      String spaceComplexity,
+      String optimizedCode,
+      List<GptFinding> findings) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   private record GptFinding(

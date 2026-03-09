@@ -43,6 +43,9 @@ public class CodeReviewResult {
   @Lob
   private String rawOutput;
 
+  @Lob
+  private String optimizedCode;
+
   private Instant completedAt;
 
   @Column(nullable = false, updatable = false)
@@ -140,6 +143,14 @@ public class CodeReviewResult {
 
   public void setUpdatedAt(Instant updatedAt) {
     this.updatedAt = updatedAt;
+  }
+
+  public String getOptimizedCode() {
+    return optimizedCode;
+  }
+
+  public void setOptimizedCode(String optimizedCode) {
+    this.optimizedCode = optimizedCode;
   }
 }
 

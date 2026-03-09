@@ -32,9 +32,16 @@ public class CodeReviewService {
     review = codeReviewRepository.save(review);
 
     try {
-      List<CodeReviewEngine.Finding> findings =
+      CodeReviewEngine.ReviewResponse response =
           aiReviewEngine.review(request.language(), request.content(), request.filePath());
-      for (CodeReviewEngine.Finding finding : findings) {
+          
+      review.setScore(response.score());
+      review.setTimeComplexity(response.timeComplexity());
+      review.setSpaceComplexity(response.spaceComplexity());
+      review.setTokensUsed(response.tokensUsed());
+      review.setExecutionTimeMs(response.executionTimeMs());
+      
+      for (CodeReviewEngine.Finding finding : response.findings()) {
         CodeIssue entity = new CodeIssue();
         entity.setSeverity(finding.severity());
         entity.setRuleId(finding.ruleId());

@@ -10,11 +10,12 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "aicodereview.ai", name = "provider", havingValue = "stub", matchIfMissing = true)
 public class LocalReviewEngine implements CodeReviewEngine {
   @Override
-  public List<Finding> review(String language, String content, String filePath) {
+  public ReviewResponse review(String language, String content, String filePath) {
+    long start = System.currentTimeMillis();
     List<Finding> findings = new ArrayList<>();
 
     if (content == null || content.isBlank()) {
-      return findings;
+      return emptyResponse();
     }
 
     int todoIndex = content.indexOf("TODO");
@@ -51,6 +52,19 @@ public class LocalReviewEngine implements CodeReviewEngine {
               "Move secrets to environment variables or a secrets manager; avoid committing them."));
     }
 
-    return findings;
+    long executionTimeMs = System.currentTimeMillis() - start;
+    return new ReviewResponse(
+        8,
+        "O(N)",
+        "O(1)",
+        "// Optimized version of the code (STUB)\n" + content,
+        findings,
+        150,
+        executionTimeMs
+    );
+  }
+
+  private ReviewResponse emptyResponse() {
+      return new ReviewResponse(null, null, null, null, new ArrayList<>(), 0, 0L);
   }
 }
